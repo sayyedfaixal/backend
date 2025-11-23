@@ -1,6 +1,6 @@
 # 🚀 Complex Backend Project
 
-A robust and scalable Node.js backend application built with Express.js and MongoDB, featuring authentication, e-commerce functionality, and todo management capabilities.
+A robust and scalable Node.js backend application built with Express.js and MongoDB, featuring a video platform with user authentication, video management, subscriptions, likes, comments, playlists, and social features.
 
 ## 📋 Table of Contents
 
@@ -10,16 +10,21 @@ A robust and scalable Node.js backend application built with Express.js and Mong
 - [Getting Started](#-getting-started)
 - [Environment Variables](#-environment-variables)
 - [API Structure](#-api-structure)
-- [Modules](#-modules)
+- [Database Models](#-database-models)
+- [ER Diagram](#-er-diagram)
 - [Scripts](#-scripts)
 - [Author](#-author)
 
 ## ✨ Features
 
-- 🔐 **JWT Authentication** - Secure user authentication with JSON Web Tokens
-- 🛒 **E-commerce Module** - Complete e-commerce functionality with products, orders, categories, and users
-- ✅ **Todo Management** - Task management system with sub-todos
-- 🎥 **Video Management** - Video content handling
+- 🔐 **JWT Authentication** - Secure user authentication with JSON Web Tokens and refresh tokens
+- 🎥 **Video Management** - Complete video platform with upload, streaming, and metadata management
+- 👥 **User Management** - User profiles with avatars, cover images, and watch history
+- 💬 **Comments System** - Video comments and interactions
+- 👍 **Likes System** - Like videos, comments, and tweets
+- 📝 **Playlists** - Create and manage video playlists
+- 🐦 **Tweets** - Social media integration with tweet functionality
+- 📊 **Subscriptions** - Channel subscription system
 - 🛡️ **Error Handling** - Centralized error handling with custom ApiError class
 - 📦 **API Response** - Standardized API response format
 - 🔄 **Async Handler** - Utility for handling async route handlers
@@ -53,8 +58,8 @@ Backend/
 │   ├── controllers/       # Route controllers
 │   ├── routes/            # API routes
 │   ├── models/            # Database models
-│   │   ├── user.model.js
-│   │   └── video..model.js
+│   │   ├── user.model.js  # User model with authentication
+│   │   └── video..model.js # Video model with pagination
 │   ├── middlewares/       # Custom middlewares
 │   ├── db/                # Database configuration
 │   │   └── index.js       # MongoDB connection
@@ -62,17 +67,6 @@ Backend/
 │       ├── ApiError.js    # Custom error class
 │       ├── ApiResponse.js # Standardized response
 │       └── asyncHandler.js # Async handler wrapper
-├── DataModeling/          # Data model definitions
-│   └── models/
-│       ├── ecommerce/     # E-commerce models
-│       │   ├── category.models.js
-│       │   ├── order.models.js
-│       │   ├── product.models.js
-│       │   └── user.models.js
-│       └── todos/         # Todo models
-│           ├── sub_todo.model.js
-│           ├── todo.models.js
-│           └── user.models.js
 ├── public/                # Static files
 │   └── temp/              # Temporary files
 ├── package.json           # Project dependencies
@@ -161,6 +155,68 @@ The application follows RESTful API principles with:
   "success": false
 }
 ```
+
+## 📊 Database Models
+
+### 👤 User Model
+
+The User model handles user authentication, profiles, and watch history.
+
+**Schema Fields:**
+- `username` (String, required, unique, indexed) - User's unique username
+- `email` (String, required, unique, lowercase, trimmed) - User's email address
+- `password` (String, required) - Hashed password using bcrypt
+- `fullName` (String, required, indexed) - User's full name
+- `avatar` (String, required) - URL to user's avatar image
+- `coverImage` (String) - URL to user's cover image
+- `watchHistory` (Array of ObjectIds, ref: Video) - Array of watched video IDs
+- `refreshToken` (String) - JWT refresh token for authentication
+- `createdAt` (Date) - Timestamp of creation
+- `updatedAt` (Date) - Timestamp of last update
+
+**Methods:**
+- `isPasswordCorrect(password)` - Compares provided password with hashed password
+- `getAccessToken()` - Generates JWT access token
+- `getRefreshToken()` - Generates JWT refresh token
+
+**Pre-save Hook:**
+- Automatically hashes password before saving if password is modified
+
+### 🎥 Video Model
+
+The Video model manages video content, metadata, and ownership.
+
+**Schema Fields:**
+- `videoFile` (String, required) - URL/path to video file
+- `thumbnail` (String, required) - URL/path to thumbnail image
+- `title` (String, required) - Video title
+- `description` (String, required) - Video description
+- `duration` (Number, required) - Video duration in seconds
+- `views` (Number, default: 0) - Number of views
+- `isPublished` (Boolean, default: true) - Publication status
+- `owner` (ObjectId, ref: User) - Reference to the user who owns the video
+- `createdAt` (Date) - Timestamp of creation
+- `updatedAt` (Date) - Timestamp of last update
+
+**Plugins:**
+- `mongoose-aggregate-paginate-v2` - Enables pagination for aggregate queries
+
+## 🗺️ ER Diagram
+
+The following Entity-Relationship diagram shows the database schema and relationships for the video platform:
+
+![ER Diagram](./public/temp/ER-Diagram.png)
+
+**Key Relationships:**
+- Users can own multiple videos (one-to-many)
+- Users can subscribe to multiple channels (many-to-many via subscriptions)
+- Users can like videos, comments, and tweets (one-to-many)
+- Users can create multiple comments (one-to-many)
+- Users can create multiple playlists (one-to-many)
+- Users can create multiple tweets (one-to-many)
+- Videos can have multiple comments (one-to-many)
+- Videos can be in multiple playlists (many-to-many)
+- Users have a watch history array referencing videos (many-to-many)
 
 ## 📜 Scripts
 
