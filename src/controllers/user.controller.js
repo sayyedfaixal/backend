@@ -82,6 +82,10 @@ const registerUser = asyncHandler(async (req, res) => {
 const generateAccessAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
     console.log("==== user.generateAccessToken  ==== ");
     const accessToken = user.generateAccessToken();
 
@@ -98,9 +102,10 @@ const generateAccessAndRefreshToken = async (userId) => {
 
     return { accessToken, refreshToken };
   } catch (error) {
+    console.error("Error generating tokens:", error);
     throw new ApiError(
       500,
-      "Something went wrong while generating Access and Refresh Token :("
+      error.message || "Something went wrong while generating Access and Refresh Token :("
     );
   }
 };
