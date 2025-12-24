@@ -26,20 +26,11 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User with email or username already Exists");
   }
 
-  // Debug: Check if files exist and their structure
-  console.log("req.files exists:", !!req.files);
-  console.log(
-    "req.files keys:",
-    req.files ? Object.keys(req.files) : "no files object"
-  );
-
   const avatarLocalFilePath = req.files?.avatar?.[0]?.path;
-  console.log("avatarLocalFilePath:", avatarLocalFilePath);
   // const coverImageLocalFilePath = req.files?.coverImage?.[0]?.path;
 
   //Check if avatar file is present
   if (!avatarLocalFilePath) {
-    console.log("Avatar file missing - req.files:", req.files);
     throw new ApiError(400, "Avatar field is required");
   }
 
@@ -52,17 +43,10 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImageLocalFilePath = req.files.coverImage[0].path;
   }
 
-  console.log("About to upload avatar with path:", avatarLocalFilePath);
-
   const avatarCloudinary = await uploadToCloudinary(avatarLocalFilePath);
-  console.log(
-    "About to upload cover image with path:",
-    coverImageLocalFilePath
-  );
 
   let coverImageCloudinary = { url: "" };
 
-  console.log("About to upload Cover Image with path:", avatarLocalFilePath);
   if (coverImageLocalFilePath) {
     coverImageCloudinary = await uploadToCloudinary(coverImageLocalFilePath);
   }
@@ -95,4 +79,105 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User registered Successfully"));
 });
 
-export { registerUser };
+const generateAccessAndRefreshToken = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    console.log("==== user.generateAccessToken  ==== ");
+    const accessToken = user.generateAccessToken();
+
+    console.log("==== user.generateRefreshToken ==== ");
+    const refreshToken = user.generateRefreshToken();
+    console.log("==== DONE ==== ");
+
+    user.refreshToken = refreshToken;
+    /**
+     * While saving the user as we have defined the schema that we need password and other fields
+     * to stop that file to kickin while saving the user we use validateBeforeSave: false
+     */
+    await user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while generating Access and Refresh Token :("
+    );
+  }
+};
+const loginUser = asyncHandler(async (req, res) => {
+  /**
+   * get username and emai
+   * find the user
+   * password check
+   * access and refresh tokent
+   * send cookie
+   * */
+
+  const { email, username, password } = req.body;
+  if (!username && !email) {
+    throw new ApiError(400, "username or email is required");
+  }
+
+  //find user either by username or email
+  const user = await User.findOne({
+    $or: [{ username }, { email }],
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User does not exist!");
+  }
+
+  const isPasswordValid = await user.isPasswordCorrect(password);
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalud user credentials!");
+  }
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  // Once we set httpOnly, secure option as true while setting the cookie then it can only be modified by the SERVER
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  // We would need to send the accessToken and RefreshToken if the user is trying to save them at their end, cookies cannot be saved in mobile so in that case it is a best practise to send these values
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "User logged in Successfully!"
+      )
+    );
+});
+
+const logoutUser = asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(req.user._id, {
+    $set: [
+      {
+        refreshToken: undefined,
+      },
+      {
+        new: true,
+      },
+    ],
+  });
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged out successfully!"));
+});
+export { registerUser, loginUser, logoutUser };
