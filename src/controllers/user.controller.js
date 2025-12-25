@@ -105,7 +105,8 @@ const generateAccessAndRefreshToken = async (userId) => {
     console.error("Error generating tokens:", error);
     throw new ApiError(
       500,
-      error.message || "Something went wrong while generating Access and Refresh Token :("
+      error.message ||
+        "Something went wrong while generating Access and Refresh Token :("
     );
   }
 };
@@ -192,4 +193,60 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User logged out successfully!"));
 });
-export { registerUser, loginUser, logoutUser };
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incomingRefreshToken) {
+    throw new ApiError(401, "Unauthorized access");
+  }
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  try {
+    // Verify the refresh token
+    const decodedToken = await jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    // Find the user
+    const user = await User.findById(decodedToken?._id);
+
+    // If the user is not found, throw an error
+    if (!user) {
+      throw new ApiError(401, "User not found");
+    }
+
+    // If the refresh token is not the same as the one in the database then it means that the user has logged out and we need to generate a new refresh token
+    if (user?.refreshToken !== incomingRefreshToken) {
+      throw new ApiError(401, "Refresh token is expired or invalid");
+    }
+    // Generate a new access token and refresh token and update the refresh token in the database and save the user
+    const { accessToken, refreshToken: newRefreshToken } =
+      await generateAccessAndRefreshToken(user._id);
+
+    // Send the new access token and refresh token to the user
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", newRefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken: newRefreshToken },
+          "Access token refreshed successfully!"
+        )
+      );
+  } catch (error) {
+    throw new ApiError(
+      500,
+      error?.message || "Something went wrong while refreshing access token :("
+    );
+  }
+});
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken };
