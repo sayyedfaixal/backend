@@ -1,6 +1,6 @@
 /**
  * User Controller
- * 
+ *
  * This file contains all the controller functions for user-related operations including:
  * - User registration and authentication (login, logout, token refresh)
  * - User profile management (update details, avatar, cover image)
@@ -17,7 +17,7 @@ import jwt from "jsonwebtoken";
 
 /**
  * Register a new user
- * 
+ *
  * Handles user registration with the following steps:
  * 1. Validates all required fields (fullName, username, email, password)
  * 2. Checks if user already exists (by username or email)
@@ -25,7 +25,7 @@ import jwt from "jsonwebtoken";
  * 4. Optionally uploads cover image if provided
  * 5. Creates user account with uploaded image URLs
  * 6. Returns user data without sensitive information (password, refreshToken)
- * 
+ *
  * @route POST /api/v1/users/register
  * @access Public
  */
@@ -101,7 +101,7 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   console.log("Avatar and CoverImage uploaded successfully...");
-  
+
   // Fetch the created user again to ensure it was saved correctly
   // Exclude sensitive fields (password and refreshToken) from the response
   const createdUser = await User.findById(user._id).select(
@@ -118,16 +118,16 @@ const registerUser = asyncHandler(async (req, res) => {
 
 /**
  * Generate Access and Refresh Tokens for a user
- * 
+ *
  * This helper function:
  * 1. Finds the user by ID
  * 2. Generates a new access token (short-lived, for API authentication)
  * 3. Generates a new refresh token (long-lived, for getting new access tokens)
  * 4. Saves the refresh token to the user document in the database
- * 
+ *
  * Note: validateBeforeSave is set to false because we're only updating the refreshToken
  * field and don't need to validate other required fields like password at this point.
- * 
+ *
  * @param {string} userId - MongoDB ObjectId of the user
  * @returns {Object} Object containing accessToken and refreshToken
  * @throws {ApiError} If user not found or token generation fails
@@ -169,7 +169,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 };
 /**
  * Login user
- * 
+ *
  * Authenticates a user and provides access tokens. The process:
  * 1. Accepts username OR email along with password
  * 2. Finds user in database by username or email
@@ -177,13 +177,13 @@ const generateAccessAndRefreshToken = async (userId) => {
  * 4. Generates new access and refresh tokens
  * 5. Sets tokens as HTTP-only cookies (secure, server-only accessible)
  * 6. Also returns tokens in response body (for mobile apps that can't use cookies)
- * 
+ *
  * @route POST /api/v1/users/login
  * @access Public
  */
 const loginUser = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
-  
+
   // User can login with either username or email
   if (!username && !email) {
     throw new ApiError(400, "username or email is required");
@@ -203,7 +203,7 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid user credentials!");
   }
-  
+
   // Generate new access and refresh tokens
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
     user._id
@@ -244,13 +244,13 @@ const loginUser = asyncHandler(async (req, res) => {
 
 /**
  * Logout user
- * 
+ *
  * Logs out the authenticated user by:
  * 1. Removing the refresh token from the database (prevents token reuse)
  * 2. Clearing the access and refresh token cookies from the client
- * 
+ *
  * Note: The user must be authenticated (req.user is set by auth middleware)
- * 
+ *
  * @route POST /api/v1/users/logout
  * @access Private (requires authentication)
  */
@@ -285,17 +285,17 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 /**
  * Refresh Access Token
- * 
+ *
  * Generates a new access token using a valid refresh token. This allows users to
  * continue accessing protected routes without re-logging in.
- * 
+ *
  * Process:
  * 1. Extracts refresh token from cookies or request body
  * 2. Verifies the refresh token signature and expiration
  * 3. Validates that the token matches the one stored in database (prevents reuse of old tokens)
  * 4. Generates new access and refresh tokens (token rotation for security)
  * 5. Updates cookies and returns new tokens
- * 
+ *
  * @route POST /api/v1/users/refresh-token
  * @access Public (but requires valid refresh token)
  */
@@ -336,7 +336,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     if (user?.refreshToken !== incomingRefreshToken) {
       throw new ApiError(401, "Refresh token is expired or invalid");
     }
-    
+
     // Generate new access token and refresh token (token rotation)
     // This invalidates the old refresh token and issues a new one
     const { accessToken, refreshToken: newRefreshToken } =
@@ -364,35 +364,35 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 /**
  * Change user password
- * 
+ *
  * Allows authenticated users to change their password by:
  * 1. Validating old password is correct
  * 2. Updating to new password (automatically hashed by mongoose pre-save hook)
- * 
+ *
  * Note: validateBeforeSave is set to false because we're only updating password
  * and the password hashing middleware will handle validation.
- * 
+ *
  * @route POST /api/v1/users/change-password
  * @access Private (requires authentication)
  */
 const changePassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
-  
+
   // Validate that both old and new passwords are provided
   if (!oldPassword || !newPassword) {
     throw new ApiError(400, "Old password and new password are required");
   }
-  
+
   // Get current user from request (set by auth middleware)
   const user = await User.findById(req.user?._id);
-  
+
   // Verify that the old password is correct
   const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
   if (!isPasswordCorrect) {
     throw new ApiError(401, "Invalid old password!");
   }
-  
+
   // Update password (mongoose pre-save hook will hash it automatically)
   user.password = newPassword;
   await user.save({ validateBeforeSave: false });
@@ -404,10 +404,10 @@ const changePassword = asyncHandler(async (req, res) => {
 
 /**
  * Get current authenticated user
- * 
+ *
  * Returns the profile information of the currently authenticated user.
  * The user object is attached to req.user by the authentication middleware.
- * 
+ *
  * @route GET /api/v1/users/current-user
  * @access Private (requires authentication)
  */
@@ -419,14 +419,14 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 /**
  * Update account details
- * 
+ *
  * Allows authenticated users to update their basic account information:
  * - Full name
  * - Email address
- * 
+ *
  * Note: This does NOT update password (use changePassword for that) or
  * profile images (use updateUserAvatar/updateUserCoverImage for those).
- * 
+ *
  * @route PATCH /api/v1/users/update-account
  * @access Private (requires authentication)
  */
@@ -437,7 +437,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
   if (!fullName || !email || !email.includes("@")) {
     throw new ApiError(400, "Full name and email are required");
   }
-  
+
   // Update user details
   // new: true returns the updated document
   // runValidators: true ensures mongoose validators run (e.g., email format)
@@ -464,14 +464,14 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 
 /**
  * Update user avatar
- * 
+ *
  * Updates the user's profile picture (avatar) by:
  * 1. Receiving the new avatar file via multipart/form-data
  * 2. Uploading it to Cloudinary
  * 3. Updating the user's avatar URL in the database
- * 
+ *
  * TODO: Delete old avatar image from Cloudinary to save storage space
- * 
+ *
  * @route PATCH /api/v1/users/avatar
  * @access Private (requires authentication)
  */
@@ -510,14 +510,14 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
 /**
  * Update user cover image
- * 
+ *
  * Updates the user's cover/banner image by:
  * 1. Receiving the new cover image file via multipart/form-data
  * 2. Uploading it to Cloudinary
  * 3. Updating the user's cover image URL in the database
- * 
+ *
  * TODO: Delete old cover image from Cloudinary to save storage space
- * 
+ *
  * @route PATCH /api/v1/users/cover-image
  * @access Private (requires authentication)
  */
@@ -556,7 +556,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 /**
  * Get user channel profile
- * 
+ *
  * Fetches detailed channel/profile information for a specific user by username.
  * Uses MongoDB aggregation pipeline to:
  * 1. Find the user by username
@@ -564,10 +564,10 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
  * 3. Count channels this user is subscribed to
  * 4. Check if the current authenticated user is subscribed to this channel
  * 5. Return channel statistics and profile information
- * 
+ *
  * This is useful for displaying channel pages with subscriber counts and
  * subscription status.
- * 
+ *
  * @route GET /api/v1/users/c/:username
  * @access Public (but subscription status requires authentication)
  */
@@ -654,17 +654,17 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 });
 /**
  * Get watch history
- * 
+ *
  * Retrieves the authenticated user's video watch history with full video details
  * and owner information. Uses nested MongoDB aggregation pipelines to:
  * 1. Find the current user
  * 2. Populate watch history with full video documents
  * 3. For each video, populate the owner (channel) information
  * 4. Return only necessary owner fields (fullName, username, avatar)
- * 
+ *
  * This provides a complete watch history with video details and channel info
  * for displaying in a user's watch history page.
- * 
+ *
  * @route GET /api/v1/users/watch-history
  * @access Private (requires authentication)
  */
@@ -674,7 +674,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     // Stage 1: Match the current authenticated user
     {
       $match: {
-        _id: new mongoose.Types.ObjectId(req.user._id),
+        _id: mongoose.Types.ObjectId.createFromHexString(req.user._id.toString()),
       },
     },
     // Stage 2: Lookup videos from watchHistory array
