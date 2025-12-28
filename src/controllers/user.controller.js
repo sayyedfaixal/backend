@@ -674,7 +674,9 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     // Stage 1: Match the current authenticated user
     {
       $match: {
-        _id: mongoose.Types.ObjectId.createFromHexString(req.user._id.toString()),
+        _id: mongoose.Types.ObjectId.createFromHexString(
+          req.user._id.toString()
+        ),
       },
     },
     // Stage 2: Lookup videos from watchHistory array
