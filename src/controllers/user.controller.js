@@ -138,16 +138,10 @@ const generateAccessAndRefreshToken = async (userId) => {
     if (!user) {
       throw new ApiError(404, "User not found");
     }
-
-    console.log("==== user.generateAccessToken  ==== ");
     // Generate access token (typically expires in 15 minutes to 1 hour)
     const accessToken = user.generateAccessToken();
-
-    console.log("==== user.generateRefreshToken ==== ");
     // Generate refresh token (typically expires in 7-30 days)
     const refreshToken = user.generateRefreshToken();
-    console.log("==== DONE ==== ");
-
     // Store refresh token in database for validation during token refresh
     user.refreshToken = refreshToken;
     /**
