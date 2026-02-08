@@ -31,12 +31,6 @@ import jwt from "jsonwebtoken";
  */
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, username, email, password } = req.body;
-  console.log("Request Body", req.body);
-  console.log("Request Headers", req.headers);
-  console.log("Request files", req.files);
-  console.log("Request file (singular)", req.file);
-  console.log("Is multipart form data?", req.is("multipart/form-data"));
-
   // Validate that all required fields are provided and not empty
   if (
     [fullName, username, email, password].some((field) => field?.trim() === "")
