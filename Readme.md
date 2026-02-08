@@ -39,10 +39,10 @@ A robust and scalable Node.js backend application built with Express.js and Mong
 - **Database**: MongoDB with Mongoose 8.19.4
 - **Authentication**: JWT (jsonwebtoken 9.0.2)
 - **Security**: bcrypt 6.0.0 for password hashing
-- **Middleware**: 
+- **Middleware**:
   - cors 2.8.5
   - cookie-parser 1.4.7
-- **Development**: 
+- **Development**:
   - nodemon 3.1.11
   - prettier 3.6.2
 - **Additional**: mongoose-aggregate-paginate-v2 1.1.4
@@ -84,12 +84,14 @@ Backend/
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd Backend
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
@@ -136,6 +138,7 @@ The application follows RESTful API principles with:
 ### Response Format
 
 **Success Response:**
+
 ```json
 {
   "statusCode": 200,
@@ -146,6 +149,7 @@ The application follows RESTful API principles with:
 ```
 
 **Error Response:**
+
 ```json
 {
   "statusCode": 400,
@@ -163,6 +167,7 @@ The application follows RESTful API principles with:
 The User model handles user authentication, profiles, and watch history.
 
 **Schema Fields:**
+
 - `username` (String, required, unique, indexed) - User's unique username
 - `email` (String, required, unique, lowercase, trimmed) - User's email address
 - `password` (String, required) - Hashed password using bcrypt
@@ -175,11 +180,13 @@ The User model handles user authentication, profiles, and watch history.
 - `updatedAt` (Date) - Timestamp of last update
 
 **Methods:**
+
 - `isPasswordCorrect(password)` - Compares provided password with hashed password
 - `getAccessToken()` - Generates JWT access token
 - `getRefreshToken()` - Generates JWT refresh token
 
 **Pre-save Hook:**
+
 - Automatically hashes password before saving if password is modified
 
 ### 🎥 Video Model
@@ -187,6 +194,7 @@ The User model handles user authentication, profiles, and watch history.
 The Video model manages video content, metadata, and ownership.
 
 **Schema Fields:**
+
 - `videoFile` (String, required) - URL/path to video file
 - `thumbnail` (String, required) - URL/path to thumbnail image
 - `title` (String, required) - Video title
@@ -199,6 +207,7 @@ The Video model manages video content, metadata, and ownership.
 - `updatedAt` (Date) - Timestamp of last update
 
 **Plugins:**
+
 - `mongoose-aggregate-paginate-v2` - Enables pagination for aggregate queries
 
 ## 🗺️ ER Diagram
@@ -207,7 +216,12 @@ The following Entity-Relationship diagram shows the database schema and relation
 
 ![ER Diagram](./public/temp/ER-Diagram.png)
 
+## 📟 Design
+
+[UI Desgin Link](https://devuiv2.vercel.app/templates/youtube)
+
 **Key Relationships:**
+
 - Users can own multiple videos (one-to-many)
 - Users can subscribe to multiple channels (many-to-many via subscriptions)
 - Users can like videos, comments, and tweets (one-to-many)
@@ -229,3 +243,7 @@ The following Entity-Relationship diagram shows the database schema and relation
 ---
 
 ⭐ If you find this project helpful, please consider giving it a star!
+
+```
+
+```
